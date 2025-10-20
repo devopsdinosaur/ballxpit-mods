@@ -23,6 +23,7 @@ Note that all of the options in this mod default to off or game defaults (false,
 
 For information on how to modify these options, see the [i]Editing the Config File[/i] section below.
 
+[[hotkeys]]
 [[config_options]]
 [size=4][b][u]Editing the Config File[/u][/b][/size]
 

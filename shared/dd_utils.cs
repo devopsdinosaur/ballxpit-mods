@@ -10,6 +10,9 @@ using System.Runtime.InteropServices;
 
 public abstract class DDPlugin : MelonMod {
     protected Dictionary<string, string> m_plugin_info = null;
+    public string NAME => m_plugin_info["name"];
+    public string GUID => m_plugin_info["guid"];
+    public string UNDERSCORE_GUID => m_plugin_info["underscore_guid"];
     protected static MelonLogger.Instance logger;
     public enum LogLevel {
         None,
@@ -95,19 +98,26 @@ public abstract class DDPlugin : MelonMod {
         string template_data = File.ReadAllText(template_path);
         Dictionary<string, List<string[]>> categories = new Dictionary<string, List<string[]>>();
         List<string> hotkey_lines = new List<string>();
-        //foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> kvp in this.Config.ToArray()) {
-        //    if (!categories.Keys.Contains(kvp.Key.Section)) {
-        //        categories[kvp.Key.Section] = new List<string[]>();
-        //    }
-        //    categories[kvp.Key.Section].Add(new string[] {
-        //        kvp.Key.Key,
-        //        $"[*][b][i]{kvp.Key.Key}[/i][/b] - {kvp.Value.Description.Description}"
-        //    });
-        //    if (kvp.Key.Section != "Hotkeys") {
-        //        continue;
-        //    }
-        //    hotkey_lines.Add($"[*][b][i]{(kvp.Key.Key.EndsWith("Modifier") ? "" : "[Modifier_Key] + ")}{kvp.Value.DefaultValue.ToString().Replace(",", " or ")}[/i][/b] - {kvp.Key.Key.Replace("Hotkey - ", "").Replace(" Hotkey", "")}");
-        //}
+        string category_prefix = UNDERSCORE_GUID + "_";
+        foreach (MelonPreferences_Category category in MelonPreferences.Categories) {
+            if (!category.DisplayName.StartsWith(category_prefix)) {
+                continue;
+            }
+            string category_name = category.DisplayName.Substring(category_prefix.Length);
+            if (category_name == "Hotkeys") {
+                foreach (MelonPreferences_Entry entry in category.Entries) {
+                    hotkey_lines.Add($"[*][b][i]{(entry.DisplayName.EndsWith("Modifier") ? "" : "[Modifier_Key] + ")}{entry.BoxedValue.ToString().Replace(",", " or ")}[/i][/b] - {entry.DisplayName.Replace("Hotkey - ", "").Replace(" Hotkey", "")}");
+                }
+            } else {
+                categories[category_name] = new List<string[]>();
+                foreach (MelonPreferences_Entry entry in category.Entries) {
+                    categories[category_name].Add(new string[] {
+                        entry.DisplayName,
+                        $"[*][b][i]{entry.DisplayName}[/i][/b] - {entry.Description}"
+                    });
+                }
+            }
+        }
         this.m_plugin_info["hotkeys"] = (hotkey_lines.Count > 0 ? $"\n[b][u][size=4]Hotkeys[/size][/u][/b]\n\n[list]\n{string.Join("\n", hotkey_lines)}\n[/list]" : "");
         List<string> ordered_categories = new List<string>(categories.Keys);
         ordered_categories.Sort();

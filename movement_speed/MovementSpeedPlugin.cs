@@ -7,14 +7,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(AutopickupPlugin), "Auto Pickup", "0.0.1", "devopsdinosaur")]
+[assembly: MelonInfo(typeof(MovementSpeedPlugin), "Movement Speed", "0.0.1", "devopsdinosaur")]
 
 public static class PluginInfo {
 
     public static string TITLE;
-    public static string NAME = "autopickup";
-    public static string SHORT_DESCRIPTION = "Automatically picks up exp, gold, etc from everywhere on the field as soon as it drops!";
-    public static string EXTRA_DETAILS = "";
+    public static string NAME = "movement_speed";
+    public static string SHORT_DESCRIPTION = "Change player movement speed using configurable hotkeys.";
+    public static string EXTRA_DETAILS = "Change speed using the hotkeys (see Hotkeys section below).  Speed info will be printed to the MelonLoader console window.";
     public static string VERSION;
     public static string AUTHOR;
     public static string GAME_TITLE = "BALLxPIT";
@@ -45,8 +45,9 @@ public static class PluginInfo {
     }
 }
 
-public class AutopickupPlugin : DDPlugin {
-	private static AutopickupPlugin m_plugin = null;
+public class MovementSpeedPlugin : DDPlugin {
+	private static MovementSpeedPlugin m_plugin = null;
+	private static float m_speed_multiplier = 0f;
 	
 	public override void OnInitializeMelon() {
 		try {
@@ -54,6 +55,8 @@ public class AutopickupPlugin : DDPlugin {
 			m_plugin = this;
 			logger = LoggerInstance;
 			Settings.Instance.early_load(m_plugin);
+			Hotkeys.load(m_plugin, keypress_check_routine());
+			m_speed_multiplier = Settings.m_speed_multiplier_start.Value;
 			create_nexus_page();
 			new HarmonyLib.Harmony(PluginInfo.GUID).PatchAll();
 		} catch (Exception e) {
@@ -61,28 +64,34 @@ public class AutopickupPlugin : DDPlugin {
 		}
 	}
 
-	[HarmonyPatch(typeof(GameMgr), "Awake")]
-	class HarmonyPatch_GameMgr_Awake {
-		private static void Postfix(LevelMgr __instance) {
-			try {
-				MelonCoroutines.Start(auto_pickup_routine());
-			} catch (Exception e) {
-				_error_log("** HarmonyPatch_LevelMgr_Awake.Postfix ERROR - " + e);
+	private static IEnumerator keypress_check_routine() {
+		for (;;) {
+			yield return null;
+			if (!Hotkeys.is_modifier_hotkey_down()) {
+				continue;				
+			}
+			string info = null;
+			if (Hotkeys.is_hotkey_down(Hotkeys.HOTKEY_SPEED_UP)) {
+				info = $"Player speed multiplier INCREASED to {(m_speed_multiplier += Settings.m_speed_multiplier_delta.Value):0.00}";
+			} else if (Hotkeys.is_hotkey_down(Hotkeys.HOTKEY_SPEED_DOWN) && m_speed_multiplier > 0) {
+				info = $"Player speed multiplier DECREASED to {(m_speed_multiplier = Mathf.Max(0, m_speed_multiplier - Settings.m_speed_multiplier_delta.Value)):0.00}";
+			}
+			if (info != null) {
+				_info_log(info);
 			}
 		}
 	}
 
-	private static IEnumerator auto_pickup_routine() {
-		for (;;) {
-			yield return new WaitForSeconds(1);
-			if (GameMgr.I == null || GameMgr.I.CurState != GameState.kPlaying) {
-				continue;
+	[HarmonyPatch(typeof(Player), "MyFixedUpdate")]
+	class HarmonyPatch_Player_MyFixedUpdate {
+		private static bool Prefix(Player __instance) {
+			try {
+				__instance.SpeedMult = m_speed_multiplier;
+				return true;
+			} catch (Exception e) {
+				_error_log("** HarmonyPatch_Player_MyFixedUpdate.Prefix ERROR - " + e);
 			}
-			foreach (PickupObj pickup in Resources.FindObjectsOfTypeAll<PickupObj>()) {
-				if (pickup.name.Contains("(Clone)")) {
-					pickup.StartPlayerPickUp(0);
-				}
-			}
+			return true;
 		}
 	}
 }

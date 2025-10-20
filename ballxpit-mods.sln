@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shared", "shared", "{933317
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "autopickup", "autopickup\autopickup.csproj", "{FBD00878-6989-4AC4-8287-C11D4DBB930D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "movement_speed", "movement_speed\movement_speed.csproj", "{57D8B7F2-007D-4367-AAF8-923975F358EF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +36,10 @@ Global
 		{FBD00878-6989-4AC4-8287-C11D4DBB930D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FBD00878-6989-4AC4-8287-C11D4DBB930D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FBD00878-6989-4AC4-8287-C11D4DBB930D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57D8B7F2-007D-4367-AAF8-923975F358EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57D8B7F2-007D-4367-AAF8-923975F358EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57D8B7F2-007D-4367-AAF8-923975F358EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57D8B7F2-007D-4367-AAF8-923975F358EF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

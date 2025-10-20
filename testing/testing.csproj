@@ -10,7 +10,7 @@
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <ItemGroup>
-      <AllFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb" />
+      <AllFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb;$(TargetDir)**\*.deps.json" />
       <NexusFiles Include="$(ProjectDir)\nexus\**\*.*" />
     </ItemGroup>
     <Delete Files="$(BepInExPath)\plugins\nexus\$(AssemblyName)\generated.txt" />

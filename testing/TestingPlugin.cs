@@ -16,13 +16,14 @@ public static class PluginInfo {
     public static string TITLE;
     public static string NAME;
     public static string SHORT_DESCRIPTION = "For testing only";
-    public static string EXTRA_DETAILS = "This mod does not make any permanent changes to the game files.  It simply modifies the strings in memory for the duration of the game.  Removing the mod and restarting the game will revert everything to its default state.";
+    public static string EXTRA_DETAILS = "";
     public static string VERSION;
     public static string AUTHOR;
     public static string GAME_TITLE = "BALLxPIT";
     public static string GAME = "ballxpit";
     public static string GUID;
-    public static string REPO = GAME + "-mods";
+	public static string UNDERSCORE_GUID;
+	public static string REPO = GAME + "-mods";
 
     static PluginInfo() {
         System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
@@ -32,7 +33,9 @@ public static class PluginInfo {
         VERSION = info.Version;
         AUTHOR = info.Author;
         GUID =  AUTHOR + "." + GAME + "." + NAME;
-    }
+		UNDERSCORE_GUID = GUID.Replace(".", "_").Replace("-", "_");
+
+	}
 
     public static Dictionary<string, string> to_dict() {
         Dictionary<string, string> info = new Dictionary<string, string>();
@@ -49,10 +52,11 @@ public class TestingPlugin : DDPlugin {
 
 	public override void OnInitializeMelon() {
 		try {
+			this.m_plugin_info = PluginInfo.to_dict();
 			m_plugin = this;
 			logger = LoggerInstance;
-			set_log_level(LogLevel.Debug);
-			this.m_plugin_info = PluginInfo.to_dict();
+			Settings.Instance.early_load(m_plugin);
+			create_nexus_page();
 			new HarmonyLib.Harmony(PluginInfo.GUID).PatchAll();
 		} catch (Exception e) {
 			_error_log("** OnInitializeMelon FATAL - " + e);
@@ -84,19 +88,6 @@ public class TestingPlugin : DDPlugin {
 		}
     }
 
-	[HarmonyPatch(typeof(Player), "MyFixedUpdate")]
-	class HarmonyPatch_Player_MyFixedUpdate {
-		private static bool Prefix(Player __instance) {
-			try {
-				__instance.SpeedMult = 2f;
-				return true;
-			} catch (Exception e) {
-				_error_log("** HarmonyPatch_Player_MyFixedUpdate.Prefix ERROR - " + e);
-			}
-			return true;
-		}
-	}
-
 	[HarmonyPatch(typeof(LevelMgr), "Awake")]
 	class HarmonyPatch_LevelMgr_Awake {
 		private static void Postfix(LevelMgr __instance) {
@@ -106,6 +97,28 @@ public class TestingPlugin : DDPlugin {
 			} catch (Exception e) {
 				_error_log("** HarmonyPatch_LevelMgr_Awake.Postfix ERROR - " + e);
 			}
+		}
+	}
+
+	[HarmonyPatch(typeof(BaseMgr), "MyUpdate")]
+	class HarmonyPatch_BaseMgr_MyUpdate {
+		private static bool m_have_increased_harvest_time = false;
+		private static bool Prefix(BaseMgr __instance) {
+			try {
+				if (__instance.CurState == BaseState.kBounceWorkers) {
+					if (!m_have_increased_harvest_time) {
+						__instance.RemainingHarvestSecs += 999f;
+						m_have_increased_harvest_time = true;
+					}
+					_info_log(__instance.RemainingHarvestSecs);
+				} else if (m_have_increased_harvest_time) {
+					m_have_increased_harvest_time = false;
+				}
+				return true;
+			} catch (Exception e) {
+				_error_log("** HarmonyPatch_BaseMgr_IncreaseHarvestClock.Prefix ERROR - " + e);
+			}
+			return true;
 		}
 	}
 
