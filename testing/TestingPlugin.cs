@@ -83,6 +83,9 @@ public class TestingPlugin : DDPlugin {
 				dump_all_objects();
 				//Application.Quit();
 			}
+			if (GameMgr.I != null && GameMgr.I.CurState == GameState.kPlaying && BattleSaveData.I != null) {
+				BattleSaveData.I.NumFreeRerolls = 999;
+			}
 		} catch (Exception e) {
 			_error_log("** OnUpdate ERROR - " + e);
 		}
@@ -107,10 +110,9 @@ public class TestingPlugin : DDPlugin {
 			try {
 				if (__instance.CurState == BaseState.kBounceWorkers) {
 					if (!m_have_increased_harvest_time) {
-						__instance.RemainingHarvestSecs += 999f;
+						__instance.RemainingHarvestSecs += 9999f;
 						m_have_increased_harvest_time = true;
 					}
-					_info_log(__instance.RemainingHarvestSecs);
 				} else if (m_have_increased_harvest_time) {
 					m_have_increased_harvest_time = false;
 				}

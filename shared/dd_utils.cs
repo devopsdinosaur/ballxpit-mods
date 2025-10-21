@@ -231,7 +231,7 @@ public static class UnityUtils {
             add_line("\"components\": [");
             tab_count++;
             lines.Add(string.Join(",\n", transform.GetComponents<Component>().Select(component => 
-                tabbed_text($"\"{component.GetIl2CppType().ToString()}\"")))
+                tabbed_text($"\"{(component != null ? component.GetIl2CppType().ToString() : "<null>")}\"")))
             );
             tab_count--;
             add_line("],");
