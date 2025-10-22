@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using Il2Cpp;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using MelonLoader;
 using System;
 using System.IO;
@@ -48,8 +49,9 @@ public static class PluginInfo {
 
 public class TestingPlugin : DDPlugin {
 	private static TestingPlugin m_plugin = null;
-	private static LevelMgr m_level_manager = null;
-
+	private const float TIME_SCALE_DELTA = 0.5f;
+	private static float m_desired_time_scale = 1f; 
+	
 	public override void OnInitializeMelon() {
 		try {
 			this.m_plugin_info = PluginInfo.to_dict();
@@ -80,25 +82,70 @@ public class TestingPlugin : DDPlugin {
     public override void OnUpdate() {
 		try {
 			if (Input.GetKeyDown(KeyCode.F5)) {
-				dump_all_objects();
+				//dump_all_objects();
 				//Application.Quit();
+				foreach (AchType achievement_type in Enum.GetValues(typeof(AchType))) {
+					if (!AchMgr.I.IsEarned(achievement_type)) {
+						AchMgr.I.Earn(achievement_type);
+					}
+				}
+			}
+			string info = null;
+			if (Input.GetKeyDown(KeyCode.Period)) {
+				info = $"Increasing time scale to {(m_desired_time_scale += TIME_SCALE_DELTA):0.0}.";
+			} else if (Input.GetKeyDown(KeyCode.Comma) && m_desired_time_scale > 0f) {
+				info = $"Decreasing time scale to {(m_desired_time_scale = Mathf.Max(0, m_desired_time_scale - TIME_SCALE_DELTA)):0.0}.";
+			}
+			Time.timeScale = m_desired_time_scale;
+			if (info != null) {
+				_info_log(info);
 			}
 			if (GameMgr.I != null && GameMgr.I.CurState == GameState.kPlaying && BattleSaveData.I != null) {
+				BattleSaveData.I.CurHealth = 999;
 				BattleSaveData.I.NumFreeRerolls = 999;
+				foreach (GridPieceInst enemy in BattleSaveData.I.Pieces) {
+					enemy.CurHealth = 1;
+				}
 			}
 		} catch (Exception e) {
 			_error_log("** OnUpdate ERROR - " + e);
 		}
     }
 
-	[HarmonyPatch(typeof(LevelMgr), "Awake")]
-	class HarmonyPatch_LevelMgr_Awake {
-		private static void Postfix(LevelMgr __instance) {
+	[HarmonyPatch(typeof(GameMgr), "Awake")]
+	class HarmonyPatch_GameMgr_Awake {
+		private static void Postfix(GameMgr __instance) {
 			try {
-				m_level_manager = __instance;
-				
+				MelonCoroutines.Start(sneaky_enemies_routine());			
 			} catch (Exception e) {
-				_error_log("** HarmonyPatch_LevelMgr_Awake.Postfix ERROR - " + e);
+				_error_log("** HarmonyPatch_GameMgr_Awake.Postfix ERROR - " + e);
+			}
+		}
+	}
+
+	private static IEnumerator sneaky_enemies_routine() {
+		for (;;) {
+			yield return new WaitForSeconds(1);
+			if (GameMgr.I == null || GameMgr.I.CurState != GameState.kPlaying) {
+				continue;
+			}
+			foreach (GridPieceObj obj in Resources.FindObjectsOfTypeAll<GridPieceObj>()) {
+				if (obj.Inst != null) {
+					obj.Inst.CurHealth = 1;
+				}
+			}
+		}
+	}
+
+	[HarmonyPatch(typeof(GridPieceObjMoon), "InitChildren")]
+	class HarmonyPatch_GridPieceObjMoon_InitChildren {
+		private static void Postfix(GridPieceObjMoon __instance) {
+			try {
+				foreach (GridPieceObjMoonBaby baby in __instance.MoonBabies) {
+					baby.Inst.CurHealth = 1;
+				}
+			} catch (Exception e) {
+				_error_log("** XXXXX.Postfix ERROR - " + e);
 			}
 		}
 	}
@@ -123,6 +170,30 @@ public class TestingPlugin : DDPlugin {
 			return true;
 		}
 	}
+
+	/*
+	[HarmonyPatch(typeof(CharBattleInst), "GetPropArray")]
+	class HarmonyPatch_CharBattleInst_GetPropArray {
+		private static bool m_one_shot = false;
+		private static void Postfix(ref Il2CppStructArray<bool> __result) {
+			if (__result != null && !m_one_shot) {
+				//m_one_shot = true;
+				for (int index = 0; index < __result.Count; index++) {
+					//_info_log($"{(CharProp) index}: {__result[index]}");
+					_info_log(__result[index]);
+				}
+			}
+		}
+	}
+	*/
+
+	//[HarmonyPatch(typeof(Player), "IsAIActive")]
+	//class HarmonyPatch_Player_IsAIActive {
+	//	private static bool Prefix(ref bool __result) {
+	//		__result = true;
+	//		return false;
+	//	}
+	//}
 
 	/*
 	[HarmonyPatch(typeof(), "")]
